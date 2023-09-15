@@ -16,6 +16,7 @@ const mysql = require("mysql2");
 const connection = mysql.createConnection({
   host: "localhost",
   user: "root",
+ 
   database: "mydb",
 });
 
@@ -24,6 +25,21 @@ app.post("/admin", jsonParser, function (req, res, next) {
     connection.execute(
       "INSERT INTO admin(users,password,password_hash,fname,lname)VALUE(?,?,?,?,?)",
       [req.body.users, req.body.password, hash, req.body.fname, req.body.lname],
+      function (err, results, fields) {
+        if (err) {
+          res.json({ status: "error", massage: err });
+          return;
+        }
+        res.json({ status: "ok" });
+      }
+    );
+  });
+});
+app.post("/updatepassword", jsonParser, function (req, res, next) {
+  bcrypt.hash(req.body.password, saltRounds, function (err, hash) {
+    connection.execute(
+      "UPDATE admin SET  password = ? , password_hash = ? WHERE id = ?",
+      [req.body.password, hash,req.body.id],
       function (err, results, fields) {
         if (err) {
           res.json({ status: "error", massage: err });
@@ -104,7 +120,7 @@ app.post("/login", jsonParser, function (req, res, next) {
             var token = jwt.sign({ users: admin[0].users }, secret, {
               expiresIn: "1h",
             });
-            res.json({ status: "ok", token, admin: admin[0].id });
+            res.json({ status: "ok", token, admin: admin[0].id,fname:admin[0].fname,lname:admin[0].lname });
           } else {
             res.json({ status: "error" });
           }
@@ -124,7 +140,7 @@ app.post("/authen", jsonParser, function (req, res, next) {
   }
 });
 
-app.get("/layer1", function (req, res, next) {
+app.post("/getlayer1", function (req, res, next) {
   connection.query(
     "SELECT * FROM layer1",
 
@@ -133,6 +149,44 @@ app.get("/layer1", function (req, res, next) {
     }
   );
 });
+
+app.post("/timestamp", jsonParser, function (req, res, next) {
+  const options = {  year: 'numeric', month: 'long', day: 'numeric' };
+  const options1 = {  hour: 'numeric',minute: 'numeric' };
+  const today = new Date();
+     const date =today.toLocaleDateString('th-TH',options );
+     const time =  today.toLocaleTimeString('th-TH',options1);
+
+  connection.query(
+    "INSERT INTO timestamp(admin_id,status,date,time) VALUE(?,?,?,?)",
+    [req.body.id,req.body.status,date,time],
+
+    function (err, results, fields) {
+      if (err) {
+        res.json({ status: "error", massage: err });
+        return;
+      }
+      res.json({ status: "ok" });
+    }
+  );
+});
+app.post("/gettimestamp", jsonParser, function (req, res, next) {
+  
+
+  connection.query(
+    "SELECT * FROM timestamp WHERE admin_id = ?",
+    [req.body.id],
+
+    function (err, results, fields) {
+      if (err) {
+        res.json({ status: "error", massage: err });
+        return;
+      }
+      res.json(results);
+    }
+  );
+});
+
 app.post("/getlayer2/", jsonParser, function (req, res, next) {
   const id_header = req.body.id_header;
 
@@ -254,10 +308,15 @@ app.get("/getinfocase/:id", function (req, res, next) {
 });
 
 app.post("/case_status", jsonParser, function (req, res, next) {
+  const options = {  year: 'numeric', month: 'long', day: 'numeric' };
+  const options1 = {  hour: 'numeric',minute: 'numeric' };
+  const today = new Date();
+     const date =today.toLocaleDateString('th-TH',options );
+     const time =  today.toLocaleTimeString('th-TH',options1);
   if (req.body.other) {
     connection.execute(
-      "INSERT INTO Case_Status(admin_id,status,question,other,IDnumber,tambon_id)VALUE(?,?,?,?,?,?)",
-      [req.body.admin_id, req.body.status, req.body.question, req.body.other,req.body.IDnumber,req.body.tambon_id],
+      "INSERT INTO Case_Status(admin_id,status,question,other,IDnumber,tambon_id,date,time)VALUE(?,?,?,?,?,?,?,?)",
+      [req.body.admin_id, req.body.status, req.body.question, req.body.other,req.body.IDnumber,req.body.tambon_id,date,time],
       function (err, results, fields) {
         if (err) {
           res.json({ status: "error", massage: err });
@@ -268,8 +327,8 @@ app.post("/case_status", jsonParser, function (req, res, next) {
     );
   } else {
     connection.execute(
-      "INSERT INTO Case_Status(admin_id,status,question,answer,IDnumber,tambon_id)VALUE(?,?,?,?,?,?)",
-      [req.body.admin_id, req.body.status, req.body.question, req.body.answer,req.body.IDnumber,req.body.tambon_id],
+      "INSERT INTO Case_Status(admin_id,status,question,answer,IDnumber,tambon_id,date,time)VALUE(?,?,?,?,?,?,?,?)",
+      [req.body.admin_id, req.body.status, req.body.question, req.body.answer,req.body.IDnumber,req.body.tambon_id,date,time],
       function (err, results, fields) {
         if (err) {
           res.json({ status: "error", massage: err });
