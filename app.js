@@ -14,292 +14,128 @@ const mysql = require("mysql2");
 
 // create the connection to database
 const connection = mysql.createConnection({
-  host: "localhost",
-  user: "root",
- 
-  database: "mydb",
+  host: "194.233.80.188",
+  user: "poll",
+  password:"poll1234",
+  database: "poll",
 });
 
-app.post("/admin", jsonParser, function (req, res, next) {
-  bcrypt.hash(req.body.password, saltRounds, function (err, hash) {
-    connection.execute(
-      "INSERT INTO admin(users,password,password_hash,fname,lname)VALUE(?,?,?,?,?)",
-      [req.body.users, req.body.password, hash, req.body.fname, req.body.lname],
-      function (err, results, fields) {
-        if (err) {
-          res.json({ status: "error", massage: err });
-          return;
-        }
-        res.json({ status: "ok" });
-      }
-    );
-  });
-});
-app.post("/updatepassword", jsonParser, function (req, res, next) {
-  bcrypt.hash(req.body.password, saltRounds, function (err, hash) {
-    connection.execute(
-      "UPDATE admin SET  password = ? , password_hash = ? WHERE id = ?",
-      [req.body.password, hash,req.body.id],
-      function (err, results, fields) {
-        if (err) {
-          res.json({ status: "error", massage: err });
-          return;
-        }
-        res.json({ status: "ok" });
-      }
-    );
-  });
-});
-
-app.post("/register", jsonParser, function (req, res, next) {
-  if (req.body.postcode) {
-    connection.execute(
-      "INSERT INTO contactuser(IDnumber,postcode) VALUE(?,?)",
-      [
-        req.body.IDnumber,
-        // req.body.fname,
-        // req.body.lname,
-        // req.body.nation,
-        // req.body.status,
-        // req.body.tel,
-        // req.body.Province,
-        // req.body.amphures,
-        req.body.postcode,
-      ],
-      function (err, results, fields) {
-        if (err) {
-          res.json({ status: "error", massage: err });
-          return;
-        }
-        res.json({ status: "ok" });
-      }
-    );
-  } else {
-    connection.execute(
-      "INSERT INTO contactuser(IDnumber,fname,lname,nation,status,tel,Province,amphures) VALUE(?,?,?,?,?,?,?,?)",
-      [
-        req.body.IDnumber,
-        req.body.fname,
-        req.body.lname,
-        req.body.nation,
-        req.body.status,
-        req.body.tel,
-        req.body.Province,
-        req.body.amphures,
-      ],
-      function (err, results, fields) {
-        if (err) {
-          res.json({ status: "error", massage: err });
-          return;
-        }
-        res.json({ status: "ok" });
-      }
-    );
-  }
-});
-
-app.post("/login", jsonParser, function (req, res, next) {
-  console.log(req);
-  connection.query(
-    "SELECT * FROM admin WHERE users=?",
-    [req.body.users],
-    function (err, admin, fields) {
-      if (err) {
-        res.json({ status: "error", massage: err });
-        return;
-      }
-      if (admin.length == 0) {
-        res.json({ status: "error", massage: "no user found", admin: admin });
-        return;
-      }
-      bcrypt.compare(
-        req.body.password,
-        admin[0].password_hash,
-        function (err, result) {
-          if (result) {
-            var token = jwt.sign({ users: admin[0].users }, secret, {
-              expiresIn: "1h",
-            });
-            res.json({ status: "ok", token, admin: admin[0].id,fname:admin[0].fname,lname:admin[0].lname });
-          } else {
-            res.json({ status: "error" });
-          }
-        }
-      );
-    }
-  );
-});
-
-app.post("/authen", jsonParser, function (req, res, next) {
-  try {
-    const token = req.headers.authorization.split(" ")[1];
-    var decoded = jwt.verify(token, secret);
-    res.json({ status: "ok", decoded });
-  } catch (err) {
-    res.json({ status: "error" });
-  }
-});
-
-app.post("/getlayer1", function (req, res, next) {
-  connection.query(
-    "SELECT * FROM layer1",
-
-    function (err, results) {
-      res.json(results);
-    }
-  );
-});
-
-app.post("/timestamp", jsonParser, function (req, res, next) {
-  const options = {  year: 'numeric', month: 'long', day: 'numeric' };
-  const options1 = {  hour: 'numeric',minute: 'numeric' };
-  const today = new Date();
-     const date =today.toLocaleDateString('th-TH',options );
-     const time =  today.toLocaleTimeString('th-TH',options1);
-
-  connection.query(
-    "INSERT INTO timestamp(admin_id,status,date,time) VALUE(?,?,?,?)",
-    [req.body.id,req.body.status,date,time],
-
-    function (err, results, fields) {
-      if (err) {
-        res.json({ status: "error", massage: err });
-        return;
-      }
-      res.json({ status: "ok" });
-    }
-  );
-});
-app.post("/gettimestamp", jsonParser, function (req, res, next) {
-  
-
-  connection.query(
-    "SELECT * FROM timestamp WHERE admin_id = ?",
-    [req.body.id],
-
-    function (err, results, fields) {
-      if (err) {
-        res.json({ status: "error", massage: err });
-        return;
-      }
-      res.json(results);
-    }
-  );
-});
-
-app.post("/getlayer2/", jsonParser, function (req, res, next) {
-  const id_header = req.body.id_header;
-
-  connection.query(
-    "SELECT * FROM layer2 WHERE `id_header`=?",
-    [id_header],
-
-    function (err, results) {
-      res.json(results);
-    }
-  );
-});
-app.post("/getlayer3/", jsonParser, function (req, res, next) {
-  const id_header = req.body.id_header;
-
-  connection.query(
-    "SELECT * FROM layer3 WHERE `id_header`=?",
-    [id_header],
-
-    function (err, results) {
-      res.json(results);
-    }
-  );
-});
-app.post("/getlayer4/", jsonParser, function (req, res, next) {
-  const id_header = req.body.id_header;
-
-  connection.query(
-    "SELECT * FROM layer4 WHERE `id_subheader`=?",
-    [id_header],
-
-    function (err, results) {
-      res.json(results);
-    }
-  );
-});
-app.post("/getlayer5/", jsonParser, function (req, res, next) {
-  const id_header = req.body.id_header;
-
-  connection.query(
-    "SELECT * FROM layer4 WHERE `id_header`=?",
-    [id_header],
-
-    function (err, results) {
-      res.json(results);
-    }
-  );
-});
-
-app.get("/getprovice", function (req, res, next) {
-  connection.query(
-    "SELECT * FROM provinces",
-
-    function (err, results) {
-      res.json(results);
-    }
-  );
-});
-app.get("/getamphures/:province_name", function (req, res, next) {
-  console.log(req);
-  const { province_name } = req.params;
-  connection.query(
-    "SELECT * FROM amphures WHERE provice_name = (?)",
-    [province_name],
-
-    function (err, results) {
-      res.json(results);
-    }
-  );
-});
-app.get("/gettambon/:postcode", function (req, res, next) {
-  console.log(req);
-  const { postcode } = req.params;
-  connection.query(
-    "SELECT * FROM tambon WHERE postcode = (?) LIMIT 1",
-    [postcode],
-
-    function (err, results) {
-      if(err){
-        res.json({ status: "error" });
-      }else{
-      res.json(results);
-      }
-    }
-  );
-});
-app.get("/getstatus", function (req, res, next) {
+app.get("/getjob", function (req, res, next) {
   console.log(req);
 
   connection.query(
-    "SELECT status FROM  statuscase",
+    "SELECT *  FROM  callcenter_job",
 
     function (err, results) {
       res.json(results);
     }
   );
 });
-app.get("/getinfoadmin/:id", function (req, res, next) {
-  const { id } = req.params;
+//นับจำนวนเคสทั้งหมด
+app.get("/getallcase", function (req, res, next) {
+  console.log(req);
+
   connection.query(
-    "SELECT fname ,lname FROM admin WHERE id =(?)",
-    [id],
+    "SELECT COUNT(*) as sum FROM  callcenter_job",
 
     function (err, results) {
       res.json(results);
     }
   );
 });
-app.get("/getinfocase/:id", function (req, res, next) {
-  const { id } = req.params;
+app.get("/getmap", function (req, res, next) {
+  console.log(req);
+
   connection.query(
-    "SELECT * FROM Case_Status WHERE admin_id =(?)",
-    [id],
+    "SELECT  TAMBON.LAT AS lat , TAMBON.LONG AS lng FROM View_forDashboard JOIN TAMBON ON View_forDashboard.tambon_id =TAMBON.TA_ID GROUP BY View_forDashboard.tambon_name",
+
+    function (err, results) {
+      res.json(results);
+    }
+  );
+});
+app.get("/gettableallcase", function (req, res, next) {
+  console.log(req);
+
+  connection.query(
+    "SELECT province_name AS Province,COUNT(*) AS allcase, SUM(IF(status = 'DONE',1,0)) AS casedone  ,SUM(IF(t1.status IS NULL,1,0)) AS casenull  , ((SUM(IF(status = 'DONE',1,0)) /COUNT(*))*100) AS percent FROM View_forDashboard AS t1 GROUP BY province_name",
+
+    function (err, results) {
+      res.json(results);
+    }
+  );
+});
+app.get("/getcaseclose", function (req, res, next) {
+  console.log(req);
+
+  connection.query(
+    "SELECT COUNT(*) as sum FROM  callcenter_job WHERE status = 'DONE' ",
+
+    function (err, results) {
+      res.json(results);
+    }
+  );
+});
+app.get("/getcasenotclose", function (req, res, next) {
+  console.log(req);
+
+  connection.query(
+    "SELECT COUNT(*) as sum FROM  callcenter_job WHERE status IS NULL ",
+
+    function (err, results) {
+      res.json(results);
+    }
+  );
+});
+app.get("/getallcaseinpast", function (req, res, next) {
+  console.log(req);
+
+  connection.query(
+    "SELECT  COUNT(*) AS sum , DATE_FORMAT(created_date,'%d') AS date FROM callcenter_job GROUP BY CAST(created_date AS DATE) ",
+
+    function (err, results) {
+      res.json(results);
+    }
+  );
+});
+app.get("/gettodaycase", function (req, res, next) {
+  console.log(req);
+
+  connection.query(
+    "SELECT COUNT(*) AS sum FROM callcenter_job WHERE CAST(created_date AS DATE) = CURDATE()",
+
+    function (err, results) {
+      res.json(results);
+    }
+  );
+});
+app.get("/getclosecaseinpast", function (req, res, next) {
+  console.log(req);
+
+  connection.query(
+    "SELECT COUNT(*) as sum ,  DATE_FORMAT(updated_date,'%d') AS date FROM  callcenter_job WHERE status = 'DONE' GROUP BY CAST(updated_date AS DATE)",
+
+    function (err, results) {
+      res.json(results);
+    }
+  );
+});
+app.get("/getquestionlevel2", function (req, res, next) {
+  console.log(req);
+
+  connection.query(
+    "SELECT callcenter_job_detail.level2_id AS id  ,callcenter_level2.level2 AS name,COUNT(callcenter_job_detail.level2_id) AS sum  FROM callcenter_job_detail  INNER JOIN callcenter_level2 ON callcenter_job_detail.level2_id = callcenter_level2.id GROUP BY callcenter_job_detail.level2_id;",
+
+    function (err, results) {
+      res.json(results);
+    }
+  );
+});
+app.get("/getviewdashboard", function (req, res, next) {
+  console.log(req);
+
+  connection.query(
+    "SELECT *  FROM  View_forDashboard",
 
     function (err, results) {
       res.json(results);
@@ -307,38 +143,6 @@ app.get("/getinfocase/:id", function (req, res, next) {
   );
 });
 
-app.post("/case_status", jsonParser, function (req, res, next) {
-  const options = {  year: 'numeric', month: 'long', day: 'numeric' };
-  const options1 = {  hour: 'numeric',minute: 'numeric' };
-  const today = new Date();
-     const date =today.toLocaleDateString('th-TH',options );
-     const time =  today.toLocaleTimeString('th-TH',options1);
-  if (req.body.other) {
-    connection.execute(
-      "INSERT INTO Case_Status(admin_id,status,question,other,IDnumber,tambon_id,date,time)VALUE(?,?,?,?,?,?,?,?)",
-      [req.body.admin_id, req.body.status, req.body.question, req.body.other,req.body.IDnumber,req.body.tambon_id,date,time],
-      function (err, results, fields) {
-        if (err) {
-          res.json({ status: "error", massage: err });
-          return;
-        }
-        res.json({ status: "ok" });
-      }
-    );
-  } else {
-    connection.execute(
-      "INSERT INTO Case_Status(admin_id,status,question,answer,IDnumber,tambon_id,date,time)VALUE(?,?,?,?,?,?,?,?)",
-      [req.body.admin_id, req.body.status, req.body.question, req.body.answer,req.body.IDnumber,req.body.tambon_id,date,time],
-      function (err, results, fields) {
-        if (err) {
-          res.json({ status: "error", massage: err });
-          return;
-        }
-        res.json({ status: "ok" });
-      }
-    );
-  }
-});
 app.listen(3333, function () {
   console.log("CORS-enabled web server listening on port 3333");
 });
