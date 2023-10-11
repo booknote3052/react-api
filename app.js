@@ -91,7 +91,7 @@ app.get("/getallcaseinpast", function (req, res, next) {
   console.log(req);
 
   connection.query(
-    "SELECT  COUNT(*) AS sum , DATE_FORMAT(created_date,'%d') AS date FROM callcenter_job GROUP BY CAST(created_date AS DATE) ",
+    "SELECT  COUNT(*) AS sum , DATE_FORMAT(created_date,'%d' '%m' '%y') AS date FROM callcenter_job GROUP BY CAST(created_date AS DATE) ",
 
     function (err, results) {
       res.json(results);
@@ -109,11 +109,11 @@ app.get("/gettodaycase", function (req, res, next) {
     }
   );
 });
-app.get("/getclosecaseinpast", function (req, res, next) {
+app.get("/getweekcaseinpast", function (req, res, next) {
   console.log(req);
 
   connection.query(
-    "SELECT COUNT(*) as sum ,  DATE_FORMAT(updated_date,'%d') AS date FROM  callcenter_job WHERE status = 'DONE' GROUP BY CAST(updated_date AS DATE)",
+    " SELECT  COUNT(*) AS sum,CASE WHEN day < 8 THEN 'Week 1' WHEN day < 15 THEN 'Week 2' WHEN day < 22 THEN 'Week 3' ELSE 'Week 4' END AS week_of_month , month , date FROM( SELECT EXTRACT(DAY FROM created_date) AS day ,EXTRACT(MONTH FROM created_date) AS month , FORMAT(created_date,'MMM','en-US') AS month_day ,created_date AS date FROM callcenter_job ) a GROUP BY week_of_month , month ORDER BY month;",
 
     function (err, results) {
       res.json(results);
@@ -124,7 +124,7 @@ app.get("/getquestionlevel2", function (req, res, next) {
   console.log(req);
 
   connection.query(
-    "SELECT callcenter_job_detail.level2_id AS id  ,callcenter_level2.level2 AS name,COUNT(callcenter_job_detail.level2_id) AS sum  FROM callcenter_job_detail  INNER JOIN callcenter_level2 ON callcenter_job_detail.level2_id = callcenter_level2.id GROUP BY callcenter_job_detail.level2_id;",
+    "SELECT callcenter_job_detail.level2_id AS id  ,callcenter_level2.level2 AS name,COUNT(callcenter_job_detail.level2_id) AS sum, FORMAT((COUNT(callcenter_job_detail.level2_id)/(SELECT COUNT(aaa.id) FROM callcenter_job_detail as aaa)*100),2) AS percent FROM (select ifnull(cd.level2_id,99) as level2_id from callcenter_job_detail as cd) as callcenter_job_detail INNER JOIN callcenter_level2 ON callcenter_job_detail.level2_id = callcenter_level2.id GROUP BY callcenter_job_detail.level2_id ORDER BY sum DESC;",
 
     function (err, results) {
       res.json(results);
@@ -136,6 +136,17 @@ app.get("/getviewdashboard", function (req, res, next) {
 
   connection.query(
     "SELECT *  FROM  View_forDashboard",
+
+    function (err, results) {
+      res.json(results);
+    }
+  );
+});
+app.get("/getviewdashboardinthisday", function (req, res, next) {
+  console.log(req);
+
+  connection.query(
+    "SELECT  ct.province_name AS name, COUNT( ct.postcode) AS sum , CAST(cj.created_date AS DATE) AS date ,cj.status FROM callcenter_job cj  LEFT JOIN (select * from callcenter_tambon group by postcode) ct ON  cj.postcode = ct.postcode  GROUP BY name HAVING  date = CURDATE()-1",
 
     function (err, results) {
       res.json(results);
