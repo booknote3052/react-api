@@ -19,12 +19,22 @@ const connection = mysql.createConnection({
   password:"poll1234",
   database: "poll",
 });
-
-app.get("/getjob", function (req, res, next) {
+app.get("/getmap", function (req, res, next) {
   console.log(req);
 
   connection.query(
-    "SELECT *  FROM  callcenter_job",
+    "SELECT COUNT(De.Column1) AS sum, CHANGWAT_T AS province_name,AMPHOE_T AS amphur_name ,Ta.LAT AS lat , Ta.LONG AS lng FROM Dashboard_Employee De LEFT JOIN (select * from TAMBON group by AM_ID) Ta ON Ta.AM_ID = De.`16/10/2566 04:00` WHERE De.`16/10/2566 04:00` IS NOT NULL GROUP BY De.`16/10/2566 04:00`;",
+
+    function (err, results) {
+      res.json(results);
+    }
+  );
+});
+app.get("/getallemployee", function (req, res, next) {
+  console.log(req);
+
+  connection.query(
+    "SELECT COUNT(*) AS sum,DATE_FORMAT(Dashboard_Employee._1,'%d' '%m' '%y') AS date  FROM	Dashboard_Employee GROUP BY CAST(_1 AS DATE);",
 
     function (err, results) {
       res.json(results);
@@ -32,121 +42,34 @@ app.get("/getjob", function (req, res, next) {
   );
 });
 //นับจำนวนเคสทั้งหมด
-app.get("/getallcase", function (req, res, next) {
+app.get("/getallemployer", function (req, res, next) {
   console.log(req);
 
   connection.query(
-    "SELECT COUNT(*) as sum FROM  callcenter_job",
+    "SELECT COUNT(*) AS sum,DATE_FORMAT(Dashboard_Employer.f3,'%d' '%m' '%y') AS date  FROM	Dashboard_Employer GROUP BY CAST(f3 AS DATE);",
 
     function (err, results) {
       res.json(results);
     }
   );
 });
-app.get("/getmap", function (req, res, next) {
+app.get("/getsumemployee", function (req, res, next) {
   console.log(req);
 
   connection.query(
-    "SELECT  TAMBON.LAT AS lat , TAMBON.LONG AS lng FROM View_forDashboard JOIN TAMBON ON View_forDashboard.tambon_id =TAMBON.TA_ID GROUP BY View_forDashboard.tambon_name",
+    "SELECT COUNT(*) AS sum  FROM	Dashboard_Employee ",
 
     function (err, results) {
       res.json(results);
     }
   );
 });
-app.get("/gettableallcase", function (req, res, next) {
+//นับจำนวนเคสทั้งหมด
+app.get("/getsumemployer", function (req, res, next) {
   console.log(req);
 
   connection.query(
-    "SELECT province_name AS Province,COUNT(*) AS allcase, SUM(IF(status = 'DONE',1,0)) AS casedone  ,SUM(IF(t1.status IS NULL,1,0)) AS casenull  , ((SUM(IF(status = 'DONE',1,0)) /COUNT(*))*100) AS percent FROM View_forDashboard AS t1 GROUP BY province_name",
-
-    function (err, results) {
-      res.json(results);
-    }
-  );
-});
-app.get("/getcaseclose", function (req, res, next) {
-  console.log(req);
-
-  connection.query(
-    "SELECT COUNT(*) as sum FROM  callcenter_job WHERE status = 'DONE' ",
-
-    function (err, results) {
-      res.json(results);
-    }
-  );
-});
-app.get("/getcasenotclose", function (req, res, next) {
-  console.log(req);
-
-  connection.query(
-    "SELECT COUNT(*) as sum FROM  callcenter_job WHERE status IS NULL ",
-
-    function (err, results) {
-      res.json(results);
-    }
-  );
-});
-app.get("/getallcaseinpast", function (req, res, next) {
-  console.log(req);
-
-  connection.query(
-    "SELECT  COUNT(*) AS sum , DATE_FORMAT(created_date,'%d' '%m' '%y') AS date FROM callcenter_job GROUP BY CAST(created_date AS DATE) ",
-
-    function (err, results) {
-      res.json(results);
-    }
-  );
-});
-app.get("/gettodaycase", function (req, res, next) {
-  console.log(req);
-
-  connection.query(
-    "SELECT COUNT(*) AS sum FROM callcenter_job WHERE CAST(created_date AS DATE) = CURDATE()",
-
-    function (err, results) {
-      res.json(results);
-    }
-  );
-});
-app.get("/getweekcaseinpast", function (req, res, next) {
-  console.log(req);
-
-  connection.query(
-    " SELECT  COUNT(*) AS sum,CASE WHEN day < 8 THEN 'Week 1' WHEN day < 15 THEN 'Week 2' WHEN day < 22 THEN 'Week 3' ELSE 'Week 4' END AS week_of_month , month , date FROM( SELECT EXTRACT(DAY FROM created_date) AS day ,EXTRACT(MONTH FROM created_date) AS month , FORMAT(created_date,'MMM','en-US') AS month_day ,created_date AS date FROM callcenter_job ) a GROUP BY week_of_month , month ORDER BY month;",
-
-    function (err, results) {
-      res.json(results);
-    }
-  );
-});
-app.get("/getquestionlevel2", function (req, res, next) {
-  console.log(req);
-
-  connection.query(
-    "SELECT callcenter_job_detail.level2_id AS id  ,callcenter_level2.level2 AS name,COUNT(callcenter_job_detail.level2_id) AS sum, FORMAT((COUNT(callcenter_job_detail.level2_id)/(SELECT COUNT(aaa.id) FROM callcenter_job_detail as aaa)*100),2) AS percent FROM (select ifnull(cd.level2_id,99) as level2_id from callcenter_job_detail as cd) as callcenter_job_detail INNER JOIN callcenter_level2 ON callcenter_job_detail.level2_id = callcenter_level2.id GROUP BY callcenter_job_detail.level2_id ORDER BY sum DESC;",
-
-    function (err, results) {
-      res.json(results);
-    }
-  );
-});
-app.get("/getviewdashboard", function (req, res, next) {
-  console.log(req);
-
-  connection.query(
-    "SELECT *  FROM  View_forDashboard",
-
-    function (err, results) {
-      res.json(results);
-    }
-  );
-});
-app.get("/getviewdashboardinthisday", function (req, res, next) {
-  console.log(req);
-
-  connection.query(
-    "SELECT  ct.province_name AS name, COUNT( ct.postcode) AS sum , CAST(cj.created_date AS DATE) AS date ,cj.status FROM callcenter_job cj  LEFT JOIN (select * from callcenter_tambon group by postcode) ct ON  cj.postcode = ct.postcode  GROUP BY name HAVING  date = CURDATE()-1",
+    "SELECT COUNT(*) AS sum FROM	Dashboard_Employer ",
 
     function (err, results) {
       res.json(results);
@@ -154,6 +77,7 @@ app.get("/getviewdashboardinthisday", function (req, res, next) {
   );
 });
 
-app.listen(3333, function () {
-  console.log("CORS-enabled web server listening on port 3333");
+
+app.listen(3030, function () {
+  console.log("CORS-enabled web server listening on port 3030");
 });
